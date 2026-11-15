@@ -223,6 +223,10 @@ leader, the set of already-committed block references). `Core::open` then initia
 state and the node is effectively back where it crashed — no separate recovery protocol, no
 state-transfer RPC, just replay.
 
+With adaptive leader scheduling enabled, replica startup also replays the persisted commit anchors
+through the scheduler before resuming at the recovered commit cursor. This reconstructs the leader
+count, scheduling boundary, and consecutive backoff state without changing the WAL format.
+
 ## Cryptography
 
 Two libraries cover everything: [`blake2`](https://crates.io/crates/blake2) for Blake2b content

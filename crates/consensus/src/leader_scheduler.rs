@@ -136,10 +136,11 @@ impl LeaderScheduler {
         while let Some(block) = to_visit.pop() {
             if visited.insert(*block.reference()) {
                 for include_ref in block.includes() {
-                    if include_ref.round() >= until && !visited.contains(include_ref) {
-                        if let Some(included) = block_reader.get_block(*include_ref) {
-                            to_visit.push(included);
-                        }
+                    if include_ref.round() >= until
+                        && !visited.contains(include_ref)
+                        && let Some(included) = block_reader.get_block(*include_ref)
+                    {
+                        to_visit.push(included);
                     }
                 }
                 subdag.push(block);

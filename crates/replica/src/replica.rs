@@ -118,7 +118,9 @@ impl Replica {
             .unwrap_or_else(|| protocol.default_round_timeout());
         let enable_synchronizer = parameters.dag.enable_synchronizer;
         let fsync = parameters.dag.fsync;
-        let committer = Committer::new(committee.clone(), storage.block_reader().clone(), protocol);
+        let mut committer =
+            Committer::new(committee.clone(), storage.block_reader().clone(), protocol);
+        committer.recover_scheduler(storage.iter_commits().map(|commit| commit.leader));
         let core = Core::open(
             block_handler,
             authority,

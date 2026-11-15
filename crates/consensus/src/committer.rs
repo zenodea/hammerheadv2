@@ -9,7 +9,7 @@ use crate::{
 };
 use dag::{
     authority::Authority,
-    block::RoundNumber,
+    block::{BlockReference, RoundNumber},
     committee::Committee,
     committee::Stake,
     consensus::{DagConsensus, LeaderStatus},
@@ -66,6 +66,29 @@ impl Committer {
             #[cfg(any(test, feature = "test-utils"))]
             has_fast_path: protocol.fast_path.is_some(),
             leaders: VecDeque::new(),
+        }
+    }
+
+    /// Reconstruct adaptive scheduling from the durable commit sequence before resuming decisions.
+    /// Call once on a newly constructed committer, with leaders in their persisted order.
+    /// Replaying only committed anchors preserves the same scheduling boundaries as live execution.
+    pub fn recover_scheduler(
+        &mut self,
+        committed_leaders: impl IntoIterator<Item = BlockReference>,
+    ) {
+        if self.scheduler.is_none() {
+            return;
+        }
+        for reference in committed_leaders {
+            let scheduler = self.scheduler.as_mut().expect("adaptive scheduler exists");
+            if scheduler.is_schedule_round(reference.round()) {
+                let anchor = self
+                    .block_reader
+                    .get_block(reference)
+                    .expect("persisted commit anchor must exist in recovered storage");
+                let leaders = scheduler.update_leader(&self.block_reader, anchor);
+                self.set_number_of_leaders(leaders);
+            }
         }
     }
 
